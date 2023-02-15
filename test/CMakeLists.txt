@@ -1,4 +1,14 @@
 add_unit_test(
+    tuple_test
+    CATCH2
+    FILES
+    cib/new_tuple.cpp
+    LIBRARIES
+    warnings
+    cib)
+target_compile_features(tuple_test PRIVATE cxx_std_20)
+
+add_unit_test(
     cib_test
     CATCH2
     FILES

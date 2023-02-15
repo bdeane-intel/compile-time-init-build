@@ -37,7 +37,7 @@ target_compile_options(
         $<$<CXX_COMPILER_ID:Clang>:-Wno-gnu-zero-variadic-macro-arguments>)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    clang_tidy_interface(cib)
+    clang_tidy_interface(cib 20)
 
     # Enable functional and performance test suites.
     enable_testing()

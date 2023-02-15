@@ -1,3 +1,4 @@
+include(CTest)
 add_custom_target(unit_tests)
 
 if(DEFINED ENV{CXX_STANDARD} AND NOT $ENV{CXX_STANDARD} EQUAL "")
