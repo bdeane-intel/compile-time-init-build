@@ -296,12 +296,14 @@ TEST_CASE("copy/move behavior for tuple", "[tuple]") {
     CHECK(counter::copies == 1);
 }
 
+namespace {
 template <typename Key, typename Value> struct map_entry {
     using key_t = Key;
     using value_t = Value;
 
     value_t value;
 };
+} // namespace
 
 template <typename T> using key_for = typename T::key_t;
 
@@ -324,6 +326,7 @@ TEST_CASE("tuple with user index", "[tuple]") {
     static_assert(cib::get<Y>(t).value == 17);
 }
 
+namespace {
 template <typename Key1, typename Key2, typename Value> struct multimap_entry {
     using key1_t = Key1;
     using key2_t = Key2;
@@ -334,6 +337,7 @@ template <typename Key1, typename Key2, typename Value> struct multimap_entry {
 
 template <typename T> using key1_for = typename T::key1_t;
 template <typename T> using key2_for = typename T::key2_t;
+} // namespace
 
 TEST_CASE("tuple with multiple user indices", "[tuple]") {
     struct M;

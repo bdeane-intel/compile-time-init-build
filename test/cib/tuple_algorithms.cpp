@@ -258,7 +258,23 @@ TEST_CASE("copy/move behavior for filter", "[tuple_algorithms]") {
     CHECK(counter::copies == 1);
 }
 
-// TEST_CASE("all_of", "[tuple_algorithms]") {
-//     constexpr auto t = cib::tuple{1, 2, 3};
-//     static_assert(all_of([](auto n) { return n > 0; }, t));
-// }
+TEST_CASE("all_of", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1, 2, 3};
+    static_assert(all_of([](auto n) { return n > 0; }, t));
+    static_assert(
+        all_of([](auto x, auto y) { return (x + y) % 2 == 0; }, t, t));
+}
+
+TEST_CASE("any_of", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1, 2, 3};
+    static_assert(any_of([](auto n) { return n % 2 == 0; }, t));
+    static_assert(
+        any_of([](auto x, auto y) { return (x + y) % 2 == 0; }, t, t));
+}
+
+TEST_CASE("none_of", "[tuple_algorithms]") {
+    constexpr auto t = cib::tuple{1, 3, 5};
+    static_assert(none_of([](auto n) { return n % 2 == 0; }, t));
+    static_assert(
+        none_of([](auto x, auto y) { return (x + y) % 2 != 0; }, t, t));
+}
