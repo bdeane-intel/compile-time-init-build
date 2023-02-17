@@ -3,6 +3,7 @@ add_unit_test(
     CATCH2
     FILES
     cib/new_tuple.cpp
+    cib/tuple_algorithms.cpp
     LIBRARIES
     warnings
     cib)
