@@ -5,6 +5,12 @@
 #include <flow/impl.hpp>
 #include <flow/milestone.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iterator>
+#include <type_traits>
+
 namespace flow {
 /**
  * flow::builder enables multiple independent components to collaboratively
@@ -51,14 +57,9 @@ class generic_builder {
      */
     static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
         -> bool {
-        // std::find_if is not constexpr in c++17 :(
-        for (auto s : graph) {
-            if (s.value.contains(node)) {
-                return false;
-            }
-        }
-
-        return true;
+        return std::none_of(
+            std::begin(graph), std::end(graph),
+            [&](auto const &s) { return s.value.contains(node); });
     }
 
     [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const
