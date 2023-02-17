@@ -1,4 +1,13 @@
 add_unit_test(
+    tuple_test
+    CATCH2
+    FILES
+    cib/new_tuple.cpp
+    LIBRARIES
+    warnings
+    cib)
+
+add_unit_test(
     cib_test
     CATCH2
     FILES
