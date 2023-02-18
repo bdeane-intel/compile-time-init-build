@@ -2,7 +2,7 @@ add_unit_test(
     tuple_test
     CATCH2
     FILES
-    cib/new_tuple.cpp
+    cib/tuple.cpp
     cib/tuple_algorithms.cpp
     LIBRARIES
     warnings
@@ -18,7 +18,6 @@ add_unit_test(
     cib/builder_meta.cpp
     cib/callback.cpp
     cib/nexus.cpp
-    cib/tuple.cpp
     cib/readme_hello_world.cpp
     LIBRARIES
     warnings

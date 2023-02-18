@@ -27,11 +27,13 @@ struct log_handler {
 
     template <logging::level Level, typename StringType>
     CIB_ALWAYS_INLINE auto log_msg(StringType msg) -> void {
-        msg.args.apply([&](auto... args) {
-            using Message = message<Level, StringType>;
-            dispatch_message<Level>(catalog<Message>(),
-                                    static_cast<std::uint32_t>(args)...);
-        });
+        apply(
+            [&](auto... args) {
+                using Message = message<Level, StringType>;
+                dispatch_message<Level>(catalog<Message>(),
+                                        static_cast<std::uint32_t>(args)...);
+            },
+            msg.args);
     }
 
   private:

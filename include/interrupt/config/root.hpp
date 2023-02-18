@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 #include <interrupt/config/fwd.hpp>
 #include <interrupt/policies.hpp>
 

@@ -2,6 +2,7 @@
 
 #include <cib/detail/compiler.hpp>
 #include <cib/tuple.hpp>
+#include <cib/tuple_algorithms.hpp>
 
 #include <limits>
 #include <type_traits>

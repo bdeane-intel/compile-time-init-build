@@ -11,8 +11,7 @@ template <typename CallableT, typename DataIterableT,
 void dispatch_single_callable(CallableT const &callable,
                               DataIterableT const &data,
                               ExtraCallbackArgsT const &...args) {
-    auto const provided_args_tuple =
-        cib::make_tuple(cib::self_type_index, args...);
+    auto const provided_args_tuple = cib::make_tuple(args...);
     auto const required_args_tuple = cib::transform(
         [&](auto requiredArg) {
             using RequiredArgType = decltype(requiredArg);
@@ -20,14 +19,16 @@ void dispatch_single_callable(CallableT const &callable,
         },
         detail::func_args_v<CallableT>);
 
-    required_args_tuple.apply([&](auto const &...requiredArgs) {
-        using MsgType = detail::msg_type_t<decltype(callable)>;
-        MsgType const msg{data};
+    apply(
+        [&](auto const &...requiredArgs) {
+            using MsgType = detail::msg_type_t<decltype(callable)>;
+            MsgType const msg{data};
 
-        if (msg.isValid()) {
-            callable(msg, requiredArgs...);
-        }
-    });
+            if (msg.isValid()) {
+                callable(msg, requiredArgs...);
+            }
+        },
+        required_args_tuple);
 }
 
 template <typename BaseMsgT, typename ExtraCallbackArgsListT,
@@ -57,9 +58,11 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     template <typename DataIterableType>
     void dispatch(DataIterableType const &data,
                   ExtraCallbackArgsT const &...args) const {
-        callbacks.for_each([&](auto callback) {
-            dispatch_single_callable(callback, data, args...);
-        });
+        for_each(
+            [&](auto callback) {
+                dispatch_single_callable(callback, data, args...);
+            },
+            callbacks);
     }
 
     [[nodiscard]] constexpr auto match_any_callback() const {
@@ -70,19 +73,22 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
             },
             callbacks);
 
-        return matchers.apply(
-            [](auto... matchersPack) { return match::any(matchersPack...); });
+        return apply(
+            [](auto... matchersPack) { return match::any(matchersPack...); },
+            matchers);
     }
 
   public:
     constexpr explicit callback_impl(MatchMsgTypeT const &msg,
                                      CallableTypesT const &...callback_args)
         : match_msg(msg), callbacks(cib::make_tuple(callback_args...)) {
-        callbacks.for_each([](auto callback) {
-            static_assert(
-                !std::is_same<decltype(callback), std::nullptr_t>::value,
-                "Function pointer specified for callback can't be null");
-        });
+        for_each(
+            [](auto callback) {
+                static_assert(
+                    !std::is_same<decltype(callback), std::nullptr_t>::value,
+                    "Function pointer specified for callback can't be null");
+            },
+            callbacks);
     }
 
     [[nodiscard]] auto is_match(BaseMsgT const &msg) const -> bool {

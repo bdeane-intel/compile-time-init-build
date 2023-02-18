@@ -10,16 +10,14 @@
 #include <utility>
 
 namespace cib {
-struct extract_service_tag {
-    template <typename T> using invoke = typename T::Service;
-};
+template <typename T> using extract_service_tag = typename T::Service;
 
 template <typename ServiceBuilderList> struct to_tuple;
 
 template <typename... ServiceBuilders>
 struct to_tuple<detail::type_list<ServiceBuilders...>> {
-    using type =
-        cib::tuple<index_metafunc_t<extract_service_tag>, ServiceBuilders...>;
+    using type = decltype(cib::make_indexed_tuple<extract_service_tag>(
+        std::declval<ServiceBuilders>()...));
     constexpr static inline type value{};
 };
 
@@ -34,14 +32,14 @@ struct get_service {
 
 struct get_service_from_tuple {
     template <typename T>
-    using invoke = typename std::remove_cv_t<std::remove_reference_t<
-        decltype(std::declval<T>().get(index_<0>))>>::service_type;
+    using invoke = typename std::remove_cvref_t<decltype(get<0>(
+        std::declval<T>()))>::service_type;
 };
 
 template <typename Config>
 constexpr static auto initialized_builders = transform<extract_service_tag>(
     [](auto extensions) {
-        constexpr auto initial_builder = extensions.get(index_<0>).builder;
+        constexpr auto initial_builder = get<0>(extensions).builder;
         using service = get_service_from_tuple::invoke<decltype(extensions)>;
         auto built_service = extensions.fold_right(
             initial_builder, [](auto extension, auto outer_builder) {
@@ -58,6 +56,6 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
 
 template <typename Config, typename Tag> struct initialized {
     constexpr static auto value =
-        initialized_builders<Config>.get(cib::tag_<Tag>).builder;
+        get<Tag>(initialized_builders<Config>).builder;
 };
 } // namespace cib

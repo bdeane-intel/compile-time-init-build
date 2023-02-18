@@ -35,9 +35,8 @@ struct handler : handler_interface<BaseMsgT, ExtraCallbackArgsT...> {
 
         if (!found_valid_callback) {
             CIB_ERROR("None of the registered callbacks claimed this message:");
-
-            callbacks.for_each(
-                [&](auto &callback) { callback.log_mismatch(msg); });
+            for_each([&](auto &callback) { callback.log_mismatch(msg); },
+                     callbacks);
         }
     }
 };

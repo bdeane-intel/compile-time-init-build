@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cib/new_tuple.hpp>
+#include <cib/tuple.hpp>
 
 #include <algorithm>
 #include <array>

@@ -30,22 +30,23 @@ template <typename Config> struct nexus {
 #undef CIB_BUILD_SERVICE
 
     static void init() {
-        initialized_builders<Config>.for_each([](auto b) {
-            using service_tag = typename decltype(b)::Service;
-            using clean_service_tag =
-                std::remove_cv_t<std::remove_reference_t<service_tag>>;
+        for_each(
+            [](auto b) {
+                using service_tag = typename decltype(b)::Service;
+                using clean_service_tag =
+                    std::remove_cv_t<std::remove_reference_t<service_tag>>;
 
-            auto &service_impl = this_t::service<clean_service_tag>;
-            using service_impl_type =
-                std::remove_reference_t<decltype(service_impl)>;
+                auto &service_impl = this_t::service<clean_service_tag>;
+                using service_impl_type =
+                    std::remove_reference_t<decltype(service_impl)>;
 
-            if constexpr (std::is_pointer_v<service_impl_type>) {
-                cib::service<clean_service_tag> = service_impl;
-
-            } else {
-                cib::service<clean_service_tag> = &service_impl;
-            }
-        });
+                if constexpr (std::is_pointer_v<service_impl_type>) {
+                    cib::service<clean_service_tag> = service_impl;
+                } else {
+                    cib::service<clean_service_tag> = &service_impl;
+                }
+            },
+            initialized_builders<Config>);
     }
 };
 } // namespace cib

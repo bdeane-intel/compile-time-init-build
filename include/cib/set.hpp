@@ -19,10 +19,10 @@ template <auto... Indexes, typename Operation>
 template <typename MetaFunc, typename Tuple> struct create_demux_tags_t;
 
 template <typename MetaFunc, typename... TupleElems>
-struct create_demux_tags_t<MetaFunc, cib::tuple_impl<TupleElems...>> {
+struct create_demux_tags_t<MetaFunc, cib::tuple<TupleElems...>> {
     constexpr static auto invoke() {
-        auto type_names = cib::detail::create_type_names<
-            MetaFunc, typename TupleElems::value_type...>(0);
+        auto type_names =
+            cib::detail::create_type_names<MetaFunc, TupleElems...>(0);
 
         // assign all type_names with the same name the same src id
         auto prev_name = type_names.front();
@@ -97,7 +97,7 @@ template <typename MetaFunc, typename Tuple>
                 [&](auto offset_into_bin) {
                     constexpr auto tuple_index =
                         tags[bin_offset[bin_index] + offset_into_bin].index;
-                    return t.get(index_<tuple_index>);
+                    return get<tuple_index>(t);
                 });
         });
 
