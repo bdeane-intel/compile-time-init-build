@@ -309,6 +309,12 @@ template <typename T> using key_for = typename T::key_t;
 TEST_CASE("make_tuple", "[tuple]") {
     static_assert(cib::make_tuple() == cib::tuple{});
     static_assert(cib::make_tuple(1, 2, 3) == cib::tuple{1, 2, 3});
+
+    constexpr auto t = cib::make_tuple(cib::tuple{});
+    using T = std::remove_const_t<decltype(t)>;
+    static_assert(std::is_same_v<T, cib::tuple<cib::tuple<>>>);
+    static_assert(cib::tuple_size_v<T> == 1);
+    static_assert(T::size() == 1);
 }
 
 TEST_CASE("make_indexed_tuple", "[tuple]") {

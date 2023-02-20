@@ -16,7 +16,7 @@ struct extend : public config_item {
 
     template <typename... InitArgs>
     [[nodiscard]] constexpr auto extends_tuple(InitArgs const &...) const {
-        return cib::tuple{*this};
+        return cib::make_tuple(*this);
     }
 };
 } // namespace cib::detail

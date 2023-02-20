@@ -12,7 +12,8 @@ namespace cib {
 template <auto... Indexes, typename Operation>
 [[nodiscard]] constexpr auto make_tuple_from_op(std::index_sequence<Indexes...>,
                                                 Operation op) {
-    return cib::tuple{op(std::integral_constant<std::size_t, Indexes>{})...};
+    return cib::make_tuple(
+        op(std::integral_constant<std::size_t, Indexes>{})...);
 }
 
 template <typename MetaFunc, typename Tuple> struct create_demux_tags_t;
@@ -37,8 +38,6 @@ struct create_demux_tags_t<MetaFunc, cib::tuple<TupleElems...>> {
         return type_names;
     }
 };
-
-template <typename T> struct show_type;
 
 /**
  * De-multiplex a tuple (tn) into a tuple of tuples grouped by a meta function
@@ -91,7 +90,7 @@ template <typename MetaFunc, typename Tuple>
         return bin_offset_;
     }();
 
-    const auto ret = cib::make_tuple_from_op(
+    return cib::make_tuple_from_op(
         std::make_index_sequence<num_bins>{}, [&](auto bin_index) {
             return cib::make_tuple_from_op(
                 std::make_index_sequence<bin_size[bin_index]>{},
@@ -101,8 +100,6 @@ template <typename MetaFunc, typename Tuple>
                     return get<tuple_index>(t);
                 });
         });
-    show_type<decltype(ret)> x;
-    return ret;
 
 #undef tags
 }

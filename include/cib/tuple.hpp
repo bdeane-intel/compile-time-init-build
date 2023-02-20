@@ -217,13 +217,13 @@ template <std::size_t I, typename T>
 using tuple_element_t = typename tuple_element<I, T>::type;
 
 template <typename... Ts> [[nodiscard]] constexpr auto make_tuple(Ts &&...ts) {
-    return tuple{std::forward<Ts>(ts)...};
+    return tuple<std::remove_cvref_t<Ts>...>{std::forward<Ts>(ts)...};
 }
 
 template <template <typename> typename... Fs>
 constexpr auto make_indexed_tuple = []<typename... Ts>(Ts &&...ts) {
-    return indexed_tuple<detail::index_function_list<Fs...>, Ts...>{
-        std::forward<Ts>(ts)...};
+    return indexed_tuple<detail::index_function_list<Fs...>,
+                         std::remove_cvref_t<Ts>...>{std::forward<Ts>(ts)...};
 };
 
 template <template <typename> typename... Fs, typename T>
