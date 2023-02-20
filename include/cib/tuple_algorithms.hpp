@@ -80,11 +80,17 @@ constexpr auto invoke_at(auto &&op, Ts &&...ts) -> decltype(auto) {
 }
 } // namespace detail
 
-template <typename Op, typename T, typename... Ts>
+template <template <typename> typename... Fs, typename Op, typename T,
+          typename... Ts>
 constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        return tuple{detail::invoke_at<Is>(op, std::forward<T>(t),
-                                           std::forward<Ts>(ts)...)...};
+        if constexpr (sizeof...(Fs) == 0) {
+            return tuple{detail::invoke_at<Is>(op, std::forward<T>(t),
+                                               std::forward<Ts>(ts)...)...};
+        } else {
+            return make_indexed_tuple<Fs...>(detail::invoke_at<Is>(
+                op, std::forward<T>(t), std::forward<Ts>(ts)...)...);
+        }
     }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 

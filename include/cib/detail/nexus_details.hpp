@@ -12,22 +12,9 @@
 namespace cib {
 template <typename T> using extract_service_tag = typename T::Service;
 
-template <typename ServiceBuilderList> struct to_tuple;
-
-template <typename... ServiceBuilders>
-struct to_tuple<detail::type_list<ServiceBuilders...>> {
-    using type = decltype(cib::make_indexed_tuple<extract_service_tag>(
-        std::declval<ServiceBuilders>()...));
-    constexpr static inline type value{};
-};
-
-template <typename ServiceBuilderList>
-constexpr static auto to_tuple_v = to_tuple<ServiceBuilderList>::value;
-
 struct get_service {
     template <typename T>
-    using invoke =
-        typename std::remove_cv_t<std::remove_reference_t<T>>::service_type;
+    using invoke = typename std::remove_cvref_t<T>::service_type;
 };
 
 struct get_service_from_tuple {

@@ -30,6 +30,23 @@ TEST_CASE("rvalue transform", "[tuple_algorithms]") {
     CHECK(u == cib::tuple{2, 3, 4});
 }
 
+namespace {
+template <typename Key, typename Value> struct map_entry {
+    using key_t = Key;
+    using value_t = Value;
+
+    value_t value;
+};
+template <typename T> using key_for = typename T::key_t;
+} // namespace
+
+TEST_CASE("transform with index", "[tuple_algorithms]") {
+    struct X;
+    constexpr auto t = transform<key_for>(
+        [](auto value) { return map_entry<X, int>{value}; }, cib::tuple{42});
+    static_assert(cib::get<X>(t).value == 42);
+}
+
 TEST_CASE("apply", "[tuple_algorithms]") {
     static_assert(
         apply([](auto... xs) { return (0 + ... + xs); }, cib::tuple{}) == 0);

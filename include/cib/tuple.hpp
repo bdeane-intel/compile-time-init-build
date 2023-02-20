@@ -167,6 +167,9 @@ struct indexed_tuple
     operator<=>(indexed_tuple const &, indexed_tuple const &) = default;
 };
 
+template <typename... Ts>
+indexed_tuple(Ts...) -> indexed_tuple<detail::index_function_list<>, Ts...>;
+
 #if __cpp_deduction_guides < 201907L
 template <typename... Ts>
 struct tuple : detail::tuple_impl<std::index_sequence_for<Ts...>,
@@ -184,9 +187,6 @@ struct tuple : detail::tuple_impl<std::index_sequence_for<Ts...>,
 };
 template <typename... Ts> tuple(Ts...) -> tuple<Ts...>;
 #else
-template <typename... Ts>
-indexed_tuple(Ts...) -> indexed_tuple<detail::index_function_list<>, Ts...>;
-
 template <typename... Ts>
 using tuple = indexed_tuple<detail::index_function_list<>, Ts...>;
 #endif
@@ -225,5 +225,15 @@ constexpr auto make_indexed_tuple = []<typename... Ts>(Ts &&...ts) {
     return indexed_tuple<detail::index_function_list<Fs...>, Ts...>{
         std::forward<Ts>(ts)...};
 };
+
+template <template <typename> typename... Fs, typename T>
+constexpr auto apply_indices(T &&t) {
+    using tuple_t = std::remove_cvref_t<T>;
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+        return indexed_tuple<detail::index_function_list<Fs...>,
+                             tuple_element_t<Is, tuple_t>...>{
+            get<Is>(std::forward<T>(t))...};
+    }(std::make_index_sequence<tuple_size_v<tuple_t>>{});
+}
 
 } // namespace cib

@@ -303,9 +303,8 @@ template <typename Key, typename Value> struct map_entry {
 
     value_t value;
 };
-} // namespace
-
 template <typename T> using key_for = typename T::key_t;
+} // namespace
 
 TEST_CASE("make_tuple", "[tuple]") {
     static_assert(cib::make_tuple() == cib::tuple{});
@@ -350,4 +349,11 @@ TEST_CASE("tuple with multiple user indices", "[tuple]") {
     static_assert(cib::get<X>(t).value == 42);
     static_assert(cib::get<N>(t).value == 17);
     static_assert(cib::get<Y>(t).value == 17);
+}
+
+TEST_CASE("apply indices", "[tuple]") {
+    struct X;
+    constexpr auto t = cib::tuple{map_entry<X, int>{42}};
+    constexpr auto u = cib::apply_indices<key_for>(t);
+    static_assert(cib::get<X>(u).value == 42);
 }
