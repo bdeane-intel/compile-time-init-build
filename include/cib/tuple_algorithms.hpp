@@ -100,10 +100,7 @@ constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
 
 template <typename Op, typename T>
 constexpr auto apply(Op &&op, T &&t) -> decltype(auto) {
-    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        return std::forward<Op>(op)(std::forward<T>(t)[index<Is>]...);
-    }
-    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+    return std::forward<T>(t).apply(std::forward<Op>(op));
 }
 
 template <typename Op, typename T, typename... Ts>

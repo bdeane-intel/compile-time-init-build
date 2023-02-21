@@ -11,7 +11,7 @@
 namespace cib {
 template <auto... Indexes, typename Operation>
 [[nodiscard]] constexpr auto make_tuple_from_op(std::index_sequence<Indexes...>,
-                                                Operation op) {
+                                                [[maybe_unused]] Operation op) {
     return cib::make_tuple(
         op(std::integral_constant<std::size_t, Indexes>{})...);
 }

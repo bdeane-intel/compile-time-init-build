@@ -42,6 +42,6 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
 
 template <typename Config, typename Tag> struct initialized {
     constexpr static auto value =
-        get<Tag>(initialized_builders<Config>).builder;
+        initialized_builders<Config>.get(std::type_identity<Tag>{}).builder;
 };
 } // namespace cib
