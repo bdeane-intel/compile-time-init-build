@@ -2,7 +2,6 @@
 
 #include <cib/detail/exports.hpp>
 #include <cib/detail/meta.hpp>
-#include <cib/detail/type_list.hpp>
 #include <cib/set.hpp>
 #include <cib/tuple.hpp>
 
@@ -19,8 +18,8 @@ struct get_service {
 
 struct get_service_from_tuple {
     template <typename T>
-    using invoke = typename std::remove_cvref_t<decltype(get<0>(
-        std::declval<T>()))>::service_type;
+    using invoke = typename std::remove_cvref_t<
+        decltype(std::declval<T>()[index<0>])>::service_type;
 };
 
 template <typename Config>

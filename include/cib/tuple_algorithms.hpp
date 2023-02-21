@@ -40,9 +40,10 @@ template <typename... Ts> constexpr auto tuple_cat(Ts &&...ts) {
             element_indices[Is].inner,
             std::remove_cvref_t<tuple_element_t<element_indices[Is].outer,
                                                 decltype(outer_tuple)>>>...>;
-        return T{get<element_indices[Is].inner>(
-            get<element_indices[Is].outer>(std::move(outer_tuple)))...};
-    }(std::make_index_sequence<total_num_elements>{});
+        return T{std::move(outer_tuple)[index<element_indices[Is].outer>]
+                                       [index<element_indices[Is].inner>]...};
+    }
+    (std::make_index_sequence<total_num_elements>{});
 }
 
 template <template <typename T> typename Pred, typename T>
@@ -68,15 +69,17 @@ template <template <typename T> typename Pred, typename T>
 
         return [&]<std::size_t... Js>(std::index_sequence<Js...>) {
             using R = cib::tuple<tuple_element_t<indices[Js], tuple_t>...>;
-            return R{get<indices[Js]>(std::forward<T>(t))...};
-        }(std::make_index_sequence<num_matches>{});
-    }(std::make_index_sequence<tuple_size_v<tuple_t>>{});
+            return R{std::forward<T>(t)[index<indices[Js]>]...};
+        }
+        (std::make_index_sequence<num_matches>{});
+    }
+    (std::make_index_sequence<tuple_size_v<tuple_t>>{});
 }
 
 namespace detail {
 template <std::size_t I, typename... Ts>
 constexpr auto invoke_at(auto &&op, Ts &&...ts) -> decltype(auto) {
-    return op(get<I>(std::forward<Ts>(ts))...);
+    return op(std::forward<Ts>(ts)[index<I>]...);
 }
 } // namespace detail
 
@@ -91,14 +94,16 @@ constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
             return make_indexed_tuple<Fs...>(detail::invoke_at<Is>(
                 op, std::forward<T>(t), std::forward<Ts>(ts)...)...);
         }
-    }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename Op, typename T>
 constexpr auto apply(Op &&op, T &&t) -> decltype(auto) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        return std::forward<Op>(op)(get<Is>(std::forward<T>(t))...);
-    }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+        return std::forward<Op>(op)(std::forward<T>(t)[index<Is>]...);
+    }
+    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename Op, typename T, typename... Ts>
@@ -106,7 +111,8 @@ constexpr auto for_each(Op &&op, T &&t, Ts &&...ts) -> Op {
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         (detail::invoke_at<Is>(op, std::forward<T>(t), std::forward<Ts>(ts)...),
          ...);
-    }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
     return op;
 }
 
@@ -115,7 +121,8 @@ constexpr auto all_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... and detail::invoke_at<Is>(f, std::forward<T>(t),
                                               std::forward<Ts>(ts)...));
-    }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename F, typename T, typename... Ts>
@@ -123,7 +130,8 @@ constexpr auto any_of(F &&f, T &&t, Ts &&...ts) -> bool {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return (... or detail::invoke_at<Is>(f, std::forward<T>(t),
                                              std::forward<Ts>(ts)...));
-    }(std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
+    }
+    (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});
 }
 
 template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {

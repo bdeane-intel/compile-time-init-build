@@ -1,51 +1,63 @@
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
 #include <utility>
 
 namespace cib {
+template <std::size_t I>
+using index_constant = std::integral_constant<std::size_t, I>;
+template <std::size_t I> constexpr auto index = index_constant<I>{};
+
+namespace tuple_literals {
+template <char... Chars>
+    requires(... and (Chars >= '0' and Chars <= '9'))
+consteval auto operator""_idx() {
+    constexpr auto n = [] {
+        auto x = std::size_t{};
+        ((x *= 10, x += Chars - '0'), ...);
+        return x;
+    }();
+    return index<n>;
+}
+} // namespace tuple_literals
+
 namespace detail {
 template <std::size_t Index, typename T, template <typename> typename... Fs>
 struct element {
-    [[nodiscard]] constexpr auto
-    get(std::integral_constant<std::size_t, Index>) const &noexcept
+    [[nodiscard]] constexpr auto get(index_constant<Index>) const &noexcept
         -> T const & {
         return t;
     }
-    [[nodiscard]] constexpr auto
-    get(std::integral_constant<std::size_t, Index>) &noexcept -> T & {
+    [[nodiscard]] constexpr auto get(index_constant<Index>) &noexcept -> T & {
         return t;
     }
-    [[nodiscard]] constexpr auto
-    get(std::integral_constant<std::size_t, Index>) &&noexcept -> T && {
+    [[nodiscard]] constexpr auto get(index_constant<Index>) &&noexcept -> T && {
         return std::forward<T>(t);
     }
 
     template <typename U>
-        requires(std::same_as<U, T> or ... or
-                 std::same_as<U, Fs<std::remove_cvref_t<T>>>)
+        requires(std::is_same_v<U, T> or ... or
+                 std::is_same_v<U, Fs<std::remove_cvref_t<T>>>)
     [[nodiscard]] constexpr auto get(std::type_identity<U>) const &noexcept
         -> T const & {
         return t;
     }
     template <typename U>
-        requires(std::same_as<U, T> or ... or
-                 std::same_as<U, Fs<std::remove_cvref_t<T>>>)
+        requires(std::is_same_v<U, T> or ... or
+                 std::is_same_v<U, Fs<std::remove_cvref_t<T>>>)
     [[nodiscard]] constexpr auto get(std::type_identity<U>) &noexcept -> T & {
         return t;
     }
     template <typename U>
-        requires(std::same_as<U, T> or ... or
-                 std::same_as<U, Fs<std::remove_cvref_t<T>>>)
+        requires(std::is_same_v<U, T> or ... or
+                 std::is_same_v<U, Fs<std::remove_cvref_t<T>>>)
     [[nodiscard]] constexpr auto get(std::type_identity<U>) &&noexcept -> T && {
         return std::forward<T>(t);
     }
 
-    [[nodiscard]] constexpr auto
-    value(std::integral_constant<std::size_t, Index>) && -> T;
+    [[nodiscard]] constexpr auto value(index_constant<Index>) && -> T;
 
     T t;
 
@@ -92,7 +104,6 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
 
     constexpr tuple_impl() = default;
     template <typename... Us>
-        requires((... and std::constructible_from<Ts, Us>))
     constexpr explicit(true) tuple_impl(Us &&...us) noexcept
         : element<Is, Ts, Fs...>{std::forward<Us>(us)}... {}
 
@@ -100,44 +111,40 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init,
                                                   Op &&op) const & {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                get(std::integral_constant<std::size_t, Is>{}))
+                get(index<Is>))
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init, Op &&op) && {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                std::move(*this).get(std::integral_constant<std::size_t, Is>{}))
+                std::move(*this).get(index<Is>))
             .value;
     }
 
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init,
                                                    Op &&op) const & {
-        return (get(std::integral_constant<std::size_t, Is>{}) + ... +
+        return (get(index<Is>) + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init, Op &&op) && {
-        return (std::move(*this).get(
-                    std::integral_constant<std::size_t, Is>{}) +
-                ... + fold_helper{op, std::forward<Init>(init)})
+        return (std::move(*this).get(index<Is>) + ... +
+                fold_helper{op, std::forward<Init>(init)})
             .value;
     }
 
     template <std::size_t I>
-    constexpr auto operator[](
-        std::integral_constant<std::size_t, I> i) const & -> decltype(auto) {
+    constexpr auto operator[](index_constant<I> i) const & -> decltype(auto) {
         return get(i);
     }
     template <std::size_t I>
-    constexpr auto
-    operator[](std::integral_constant<std::size_t, I> i) & -> decltype(auto) {
+    constexpr auto operator[](index_constant<I> i) & -> decltype(auto) {
         return get(i);
     }
     template <std::size_t I>
-    constexpr auto
-    operator[](std::integral_constant<std::size_t, I> i) && -> decltype(auto) {
+    constexpr auto operator[](index_constant<I> i) && -> decltype(auto) {
         return std::move(*this).get(i);
     }
 
@@ -186,8 +193,7 @@ constexpr std::size_t tuple_size_v<indexed_tuple<Ts...>> = sizeof...(Ts) - 1;
 
 template <std::size_t I, typename... Ts>
 struct tuple_element<I, indexed_tuple<Ts...>> {
-    using type = decltype(std::declval<indexed_tuple<Ts...>>().value(
-        std::integral_constant<std::size_t, I>{}));
+    using type = decltype(std::declval<indexed_tuple<Ts...>>().value(index<I>));
 };
 
 #if __cpp_deduction_guides < 201907L
@@ -211,8 +217,7 @@ template <typename... Ts>
 constexpr std::size_t tuple_size_v<tuple<Ts...>> = sizeof...(Ts);
 
 template <std::size_t I, typename... Ts> struct tuple_element<I, tuple<Ts...>> {
-    using type = decltype(std::declval<tuple<Ts...>>().value(
-        std::integral_constant<std::size_t, I>{}));
+    using type = decltype(std::declval<tuple<Ts...>>().value(index<I>));
 };
 #else
 template <typename... Ts>
@@ -221,9 +226,8 @@ using tuple = indexed_tuple<detail::index_function_list<>, Ts...>;
 
 template <std::size_t I, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t).get(
-        std::integral_constant<std::size_t, I>{})) {
-    return std::forward<Tuple>(t).get(std::integral_constant<std::size_t, I>{});
+    -> decltype(std::forward<Tuple>(t).get(index<I>)) {
+    return std::forward<Tuple>(t).get(index<I>);
 }
 
 template <typename T, typename Tuple>
@@ -248,7 +252,7 @@ constexpr auto apply_indices(T &&t) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return indexed_tuple<detail::index_function_list<Fs...>,
                              tuple_element_t<Is, tuple_t>...>{
-            get<Is>(std::forward<T>(t))...};
+            std::forward<T>(t)[index<Is>]...};
     }
     (std::make_index_sequence<tuple_size_v<tuple_t>>{});
 }

@@ -99,7 +99,7 @@ template <typename MetaFunc, typename Tuple>
                 [&](auto offset_into_bin) {
                     constexpr auto tuple_index =
                         tags[bin_offset[bin_index] + offset_into_bin].index;
-                    return get<tuple_index>(t);
+                    return t[index<tuple_index>];
                 });
         });
 

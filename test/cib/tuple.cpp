@@ -85,18 +85,9 @@ TEST_CASE("free get value categories", "[tuple]") {
     }
 }
 
-template <char... Chars>
-    requires(... and (Chars >= '0' and Chars <= '9'))
-consteval auto operator""_idx() {
-    constexpr auto n = [] {
-        auto x = std::size_t{};
-        ((x *= 10, x += Chars - '0'), ...);
-        return x;
-    }();
-    return std::integral_constant<std::size_t, n>{};
-}
-
 TEST_CASE("indexing", "[tuple]") {
+    using namespace cib::tuple_literals;
+
     constexpr auto t = cib::tuple{5, true, 10l};
     static_assert(t[0_idx] == 5);
     static_assert(t[1_idx] == true);
