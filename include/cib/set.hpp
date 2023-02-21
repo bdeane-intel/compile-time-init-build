@@ -24,15 +24,17 @@ struct create_demux_tags_t<MetaFunc, cib::tuple<TupleElems...>> {
         auto type_names =
             cib::detail::create_type_names<MetaFunc, TupleElems...>(0);
 
-        // assign all type_names with the same name the same src id
-        auto prev_name = type_names.front();
-        std::size_t name_dst_index = 0;
-        for (auto &name : type_names) {
-            if (name != prev_name) {
-                prev_name = name;
-                ++name_dst_index;
+        if constexpr (sizeof...(TupleElems) > 0) {
+            // assign all type_names with the same name the same src id
+            auto prev_name = type_names.front();
+            std::size_t name_dst_index = 0;
+            for (auto &name : type_names) {
+                if (name != prev_name) {
+                    prev_name = name;
+                    ++name_dst_index;
+                }
+                name.src = name_dst_index;
             }
-            name.src = name_dst_index;
         }
 
         return type_names;

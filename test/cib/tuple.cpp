@@ -329,6 +329,13 @@ TEST_CASE("tuple with user index", "[tuple]") {
                                                         map_entry<Y, int>{17});
     static_assert(cib::get<X>(t).value == 42);
     static_assert(cib::get<Y>(t).value == 17);
+    using T = std::remove_const_t<decltype(t)>;
+    static_assert(
+        std::is_same_v<
+            T, cib::indexed_tuple<cib::detail::index_function_list<key_for>,
+                                  map_entry<X, int>, map_entry<Y, int>>>);
+    static_assert(cib::tuple_size_v<T> == 2);
+    static_assert(T::size() == 2);
 }
 
 namespace {
