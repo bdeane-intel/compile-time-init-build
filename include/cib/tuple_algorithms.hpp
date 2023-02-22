@@ -9,8 +9,11 @@
 #include <utility>
 
 namespace cib {
+constexpr auto tuple_cat(auto &&t) { return t; }
 
-template <typename... Ts> constexpr auto tuple_cat(Ts &&...ts) {
+template <typename... Ts>
+    requires(sizeof...(Ts) != 1)
+constexpr auto tuple_cat(Ts &&...ts) {
     struct index_pair {
         std::size_t outer;
         std::size_t inner;
@@ -88,11 +91,13 @@ template <template <typename> typename... Fs, typename Op, typename T,
 constexpr auto transform(Op &&op, T &&t, Ts &&...ts) {
     return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         if constexpr (sizeof...(Fs) == 0) {
-            return tuple{detail::invoke_at<Is>(op, std::forward<T>(t),
-                                               std::forward<Ts>(ts)...)...};
+            return make_tuple(
+                detail::invoke_at<Is>(std::forward<Op>(op), std::forward<T>(t),
+                                      std::forward<Ts>(ts)...)...);
         } else {
-            return make_indexed_tuple<Fs...>(detail::invoke_at<Is>(
-                op, std::forward<T>(t), std::forward<Ts>(ts)...)...);
+            return make_indexed_tuple<Fs...>(
+                detail::invoke_at<Is>(std::forward<Op>(op), std::forward<T>(t),
+                                      std::forward<Ts>(ts)...)...);
         }
     }
     (std::make_index_sequence<tuple_size_v<std::remove_cvref_t<T>>>{});

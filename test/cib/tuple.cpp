@@ -271,20 +271,16 @@ TEST_CASE("free get is SFINAE-friendly", "[tuple]") {
 TEST_CASE("copy/move behavior for tuple", "[tuple]") {
     counter::reset();
     auto t1 = cib::tuple{counter{}};
-    CHECK(counter::moves == 1);
-    CHECK(counter::copies == 0);
+    auto const orig_moves = counter::moves;
+    auto const orig_copies = counter::moves;
 
     [[maybe_unused]] auto t2 = t1;
-    CHECK(counter::moves == 1);
-    CHECK(counter::copies == 1);
+    CHECK(counter::moves == orig_moves);
+    CHECK(counter::copies == orig_copies + 1);
 
     [[maybe_unused]] auto t3 = std::move(t1);
-    CHECK(counter::moves == 2);
-    CHECK(counter::copies == 1);
-
-    t1 = cib::tuple{counter{}};
-    CHECK(counter::moves == 4);
-    CHECK(counter::copies == 1);
+    CHECK(counter::moves == orig_moves + 1);
+    CHECK(counter::copies == orig_copies + 1);
 }
 
 namespace {

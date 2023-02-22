@@ -108,35 +108,30 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     using base_t<Is, Ts>::get...;
     using base_t<Is, Ts>::element_value...;
 
-    constexpr tuple_impl() = default;
-    template <typename... Us>
-    constexpr explicit(true) tuple_impl(Us &&...us) noexcept
-        : base_t<Is, Ts>{std::forward<Us>(us)}... {}
-
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init,
                                                   Op &&op) const & {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                get(index<Is>))
+                base_t<Is, Ts>::value)
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init, Op &&op) && {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                std::move(*this).get(index<Is>))
+                std::move(base_t<Is, Ts>::value))
             .value;
     }
 
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init,
                                                    Op &&op) const & {
-        return (get(index<Is>) + ... +
+        return (base_t<Is, Ts>::value + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init, Op &&op) && {
-        return (std::move(*this).get(index<Is>) + ... +
+        return (std::move(base_t<Is, Ts>::value) + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
@@ -206,10 +201,7 @@ struct tuple_element<I, detail::tuple_impl<Ts...>> {
 #if __cpp_deduction_guides < 201907L
 template <typename... Ts>
 struct tuple : detail::tuple_impl<std::index_sequence_for<Ts...>,
-                                  detail::index_function_list<>, Ts...> {
-    using detail::tuple_impl<std::index_sequence_for<Ts...>,
-                             detail::index_function_list<>, Ts...>::tuple_impl;
-};
+                                  detail::index_function_list<>, Ts...> {};
 template <typename... Ts> tuple(Ts...) -> tuple<Ts...>;
 
 template <typename... Ts>
@@ -221,10 +213,7 @@ template <std::size_t I, typename... Ts> struct tuple_element<I, tuple<Ts...>> {
 
 template <typename IndexList, typename... Ts>
 struct indexed_tuple
-    : detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...> {
-    using detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList,
-                             Ts...>::tuple_impl;
-};
+    : detail::tuple_impl<std::index_sequence_for<Ts...>, IndexList, Ts...> {};
 
 template <typename... Ts>
 indexed_tuple(Ts...) -> indexed_tuple<detail::index_function_list<>, Ts...>;
