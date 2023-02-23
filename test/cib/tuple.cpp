@@ -198,6 +198,22 @@ TEST_CASE("equality comparable", "[tuple]") {
     static_assert(t != cib::tuple{5, 11});
 }
 
+namespace {
+struct eq {
+    [[nodiscard]] friend constexpr auto operator==(eq lhs, eq rhs) -> bool {
+        return lhs.x == rhs.x;
+    }
+    int x;
+};
+} // namespace
+
+TEST_CASE("equality comparable (user-defined)", "[tuple]") {
+    constexpr auto t = cib::tuple{eq{1}};
+
+    static_assert(t == cib::tuple{eq{1}});
+    static_assert(t != cib::tuple{eq{2}});
+}
+
 TEST_CASE("order comparable", "[tuple]") {
     constexpr auto t = cib::tuple{5, 10};
 
@@ -272,7 +288,7 @@ TEST_CASE("copy/move behavior for tuple", "[tuple]") {
     counter::reset();
     auto t1 = cib::tuple{counter{}};
     auto const orig_moves = counter::moves;
-    auto const orig_copies = counter::moves;
+    auto const orig_copies = counter::copies;
 
     [[maybe_unused]] auto t2 = t1;
     CHECK(counter::moves == orig_moves);

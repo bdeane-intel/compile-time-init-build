@@ -9,44 +9,45 @@
 #include <utility>
 
 namespace cib {
-constexpr auto tuple_cat(auto &&t) { return t; }
-
-template <typename... Ts>
-    requires(sizeof...(Ts) != 1)
-constexpr auto tuple_cat(Ts &&...ts) {
-    struct index_pair {
-        std::size_t outer;
-        std::size_t inner;
-    };
-
-    constexpr auto total_num_elements =
-        (0 + ... + tuple_size_v<std::remove_cvref_t<Ts>>);
-    [[maybe_unused]] constexpr auto element_indices = [&] {
-        std::array<index_pair, total_num_elements> indices{};
-        auto it = std::begin(indices);
-        std::size_t outer{};
-        [[maybe_unused]] const auto fill_indices = [&](std::size_t n) {
-            std::size_t inner{};
-            it = std::generate_n(it, n, [&] {
-                return index_pair{outer, inner++};
-            });
-            ++outer;
+template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
+    if constexpr (sizeof...(Ts) == 1) {
+        return []<typename T>(T &&t) { return t; }(std::forward<Ts>(ts)...);
+    } else {
+        struct index_pair {
+            std::size_t outer;
+            std::size_t inner;
         };
-        (fill_indices(tuple_size_v<std::remove_cvref_t<Ts>>), ...);
-        return indices;
-    }();
 
-    [[maybe_unused]] auto outer_tuple =
-        cib::tuple<Ts &&...>{std::forward<Ts>(ts)...};
-    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-        using T = cib::tuple<tuple_element_t<
-            element_indices[Is].inner,
-            std::remove_cvref_t<tuple_element_t<element_indices[Is].outer,
-                                                decltype(outer_tuple)>>>...>;
-        return T{std::move(outer_tuple)[index<element_indices[Is].outer>]
-                                       [index<element_indices[Is].inner>]...};
+        constexpr auto total_num_elements =
+            (0 + ... + tuple_size_v<std::remove_cvref_t<Ts>>);
+        [[maybe_unused]] constexpr auto element_indices = [&] {
+            std::array<index_pair, total_num_elements> indices{};
+            auto it = std::begin(indices);
+            std::size_t outer{};
+            [[maybe_unused]] const auto fill_indices = [&](std::size_t n) {
+                std::size_t inner{};
+                it = std::generate_n(it, n, [&] {
+                    return index_pair{outer, inner++};
+                });
+                ++outer;
+            };
+            (fill_indices(tuple_size_v<std::remove_cvref_t<Ts>>), ...);
+            return indices;
+        }();
+
+        [[maybe_unused]] auto outer_tuple =
+            cib::tuple<Ts &&...>{std::forward<Ts>(ts)...};
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+            using T = cib::tuple<tuple_element_t<
+                element_indices[Is].inner,
+                std::remove_cvref_t<tuple_element_t<
+                    element_indices[Is].outer, decltype(outer_tuple)>>>...>;
+            return T{
+                std::move(outer_tuple)[index<element_indices[Is].outer>]
+                                      [index<element_indices[Is].inner>]...};
+        }
+        (std::make_index_sequence<total_num_elements>{});
     }
-    (std::make_index_sequence<total_num_elements>{});
 }
 
 template <template <typename T> typename Pred, typename T>
