@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <iterator>
 #include <type_traits>
@@ -34,34 +35,34 @@ std::is_class_v<T>;
 
 template <std::size_t Index, nonderivable T, typename... Ts>
 struct element<Index, T, Ts...> {
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) const &noexcept
-        -> T const & {
+    [[nodiscard]] constexpr auto
+    ugly_iGet(index_constant<Index>) const &noexcept -> T const & {
         return value;
     }
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) &noexcept
+    [[nodiscard]] constexpr auto ugly_iGet(index_constant<Index>) &noexcept
         -> T & {
         return value;
     }
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) &&noexcept
+    [[nodiscard]] constexpr auto ugly_iGet(index_constant<Index>) &&noexcept
         -> T && {
         return std::forward<T>(value);
     }
 
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) const &noexcept
-        -> T const & {
+    [[nodiscard]] constexpr auto ugly_tGet(
+        std::type_identity<U>) const &noexcept -> T const & {
         return value;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) &noexcept
+    [[nodiscard]] constexpr auto ugly_tGet(std::type_identity<U>) &noexcept
         -> T & {
         return value;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) &&noexcept
+    [[nodiscard]] constexpr auto ugly_tGet(std::type_identity<U>) &&noexcept
         -> T && {
         return std::forward<T>(value);
     }
@@ -80,34 +81,34 @@ struct element<Index, T, Ts...> {
 
 template <std::size_t Index, derivable T, typename... Ts>
 struct element<Index, T, Ts...> : T {
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) const &noexcept
-        -> T const & {
+    [[nodiscard]] constexpr auto
+    ugly_iGet(index_constant<Index>) const &noexcept -> T const & {
         return *this;
     }
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) &noexcept
+    [[nodiscard]] constexpr auto ugly_iGet(index_constant<Index>) &noexcept
         -> T & {
         return *this;
     }
-    [[nodiscard]] constexpr auto ugly_Get(index_constant<Index>) &&noexcept
+    [[nodiscard]] constexpr auto ugly_iGet(index_constant<Index>) &&noexcept
         -> T && {
         return std::move(*this);
     }
 
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) const &noexcept
-        -> T const & {
+    [[nodiscard]] constexpr auto ugly_tGet(
+        std::type_identity<U>) const &noexcept -> T const & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) &noexcept
+    [[nodiscard]] constexpr auto ugly_tGet(std::type_identity<U>) &noexcept
         -> T & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_Get(std::type_identity<U>) &&noexcept
+    [[nodiscard]] constexpr auto ugly_tGet(std::type_identity<U>) &&noexcept
         -> T && {
         return std::move(*this);
     }
@@ -148,6 +149,11 @@ template <template <typename> typename... Fs> struct element_helper {
     using element_t = element<I, T, Fs<std::remove_cvref_t<T>>...>;
 };
 
+struct index_pair {
+    std::size_t outer;
+    std::size_t inner;
+};
+
 template <std::size_t... Is, template <typename> typename... Fs, typename... Ts>
 struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     : element_helper<Fs...>::template element_t<Is, Ts>... {
@@ -156,33 +162,34 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     using base_t = typename element_helper<Fs...>::template element_t<I, T>;
 
   public:
-    using base_t<Is, Ts>::ugly_Get...;
+    using base_t<Is, Ts>::ugly_iGet...;
+    using base_t<Is, Ts>::ugly_tGet...;
     using base_t<Is, Ts>::ugly_Value...;
 
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init,
                                                   Op &&op) const & {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                ugly_Get(index<Is>))
+                ugly_iGet(index<Is>))
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init, Op &&op) && {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                std::move(*this).ugly_Get(index<Is>))
+                std::move(*this).ugly_iGet(index<Is>))
             .value;
     }
 
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init,
                                                    Op &&op) const & {
-        return (ugly_Get(index<Is>) + ... +
+        return (ugly_iGet(index<Is>) + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init, Op &&op) && {
-        return (std::move(*this).ugly_Get(index<Is>) + ... +
+        return (std::move(*this).ugly_iGet(index<Is>) + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
@@ -190,42 +197,68 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> i) const & -> decltype(auto) {
-        return ugly_Get(i);
+        return ugly_iGet(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> i) & -> decltype(auto) {
-        return ugly_Get(i);
+        return ugly_iGet(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> i) && -> decltype(auto) {
-        return std::move(*this).ugly_Get(i);
+        return std::move(*this).ugly_iGet(i);
+    }
+
+    template <std::size_t I>
+    [[nodiscard]] constexpr auto
+    get(index_constant<I> i) const & -> decltype(auto) {
+        return ugly_iGet(i);
+    }
+    template <std::size_t I>
+    [[nodiscard]] constexpr auto get(index_constant<I> i) & -> decltype(auto) {
+        return ugly_iGet(i);
+    }
+    template <std::size_t I>
+    [[nodiscard]] constexpr auto get(index_constant<I> i) && -> decltype(auto) {
+        return std::move(*this).ugly_iGet(i);
     }
 
     [[nodiscard]] constexpr auto get(auto idx) const & -> decltype(auto) {
-        return ugly_Get(idx);
+        return ugly_tGet(idx);
     }
     [[nodiscard]] constexpr auto get(auto idx) & -> decltype(auto) {
-        return ugly_Get(idx);
+        return ugly_tGet(idx);
     }
     [[nodiscard]] constexpr auto get(auto idx) && -> decltype(auto) {
-        return std::move(*this).ugly_Get(idx);
+        return std::move(*this).ugly_tGet(idx);
     }
 
     template <typename Op>
     constexpr auto apply(Op &&op) const & -> decltype(auto) {
-        return std::forward<Op>(op)(ugly_Get(index<Is>)...);
+        return std::forward<Op>(op)(ugly_iGet(index<Is>)...);
     }
     template <typename Op> constexpr auto apply(Op &&op) & -> decltype(auto) {
-        return std::forward<Op>(op)(ugly_Get(index<Is>)...);
+        return std::forward<Op>(op)(ugly_iGet(index<Is>)...);
     }
     template <typename Op> constexpr auto apply(Op &&op) && -> decltype(auto) {
-        return std::forward<Op>(op)(std::move(*this).ugly_Get(index<Is>)...);
+        return std::forward<Op>(op)(std::move(*this).ugly_iGet(index<Is>)...);
     }
 
     static constexpr auto size() -> std::size_t { return sizeof...(Ts); }
     constexpr auto ugly_Value(...) && -> void;
+
+    [[nodiscard]] static constexpr auto fill_inner_indices(index_pair *p)
+        -> index_pair * {
+        ((p++->inner = Is), ...);
+        return p;
+    }
+    [[nodiscard]] static constexpr auto fill_outer_indices(index_pair *p,
+                                                           std::size_t n)
+        -> index_pair * {
+        ((p++->outer = (static_cast<void>(Is), n)), ...);
+        return p;
+    }
 
   private:
     [[nodiscard]] friend constexpr auto operator==(tuple_impl const &,
@@ -269,14 +302,14 @@ using indexed_tuple =
 
 template <std::size_t I, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t).ugly_Get(index<I>)) {
-    return std::forward<Tuple>(t).ugly_Get(index<I>);
+    -> decltype(std::forward<Tuple>(t).ugly_iGet(index<I>)) {
+    return std::forward<Tuple>(t).ugly_iGet(index<I>);
 }
 
 template <typename T, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t).ugly_Get(std::type_identity<T>{})) {
-    return std::forward<Tuple>(t).ugly_Get(std::type_identity<T>{});
+    -> decltype(std::forward<Tuple>(t).ugly_tGet(std::type_identity<T>{})) {
+    return std::forward<Tuple>(t).ugly_tGet(std::type_identity<T>{});
 }
 
 template <typename... Ts> [[nodiscard]] constexpr auto make_tuple(Ts &&...ts) {

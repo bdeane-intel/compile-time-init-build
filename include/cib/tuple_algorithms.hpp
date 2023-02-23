@@ -2,36 +2,27 @@
 
 #include <cib/tuple.hpp>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iterator>
+#include <numeric>
 #include <utility>
 
 namespace cib {
 template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
     if constexpr (sizeof...(Ts) == 1) {
-        return []<typename T>(T &&t) { return t; }(std::forward<Ts>(ts)...);
+        return (std::forward<Ts>(ts), ...);
     } else {
-        struct index_pair {
-            std::size_t outer;
-            std::size_t inner;
-        };
-
         constexpr auto total_num_elements =
             (0 + ... + tuple_size_v<std::remove_cvref_t<Ts>>);
+
         [[maybe_unused]] constexpr auto element_indices = [&] {
-            std::array<index_pair, total_num_elements> indices{};
-            auto it = std::begin(indices);
-            std::size_t outer{};
-            [[maybe_unused]] const auto fill_indices = [&](std::size_t n) {
-                std::size_t inner{};
-                it = std::generate_n(it, n, [&] {
-                    return index_pair{outer, inner++};
-                });
-                ++outer;
-            };
-            (fill_indices(tuple_size_v<std::remove_cvref_t<Ts>>), ...);
+            std::array<detail::index_pair, total_num_elements> indices{};
+            auto p = std::data(indices);
+            ((p = std::remove_cvref_t<Ts>::fill_inner_indices(p)), ...);
+            auto q = std::data(indices);
+            std::size_t n{};
+            ((q = std::remove_cvref_t<Ts>::fill_outer_indices(q, n++)), ...);
             return indices;
         }();
 
@@ -40,8 +31,8 @@ template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             using T = cib::tuple<tuple_element_t<
                 element_indices[Is].inner,
-                std::remove_cvref_t<tuple_element_t<
-                    element_indices[Is].outer, decltype(outer_tuple)>>>...>;
+                std::remove_cvref_t<decltype(std::move(
+                    outer_tuple)[index<element_indices[Is].outer>])>>...>;
             return T{
                 std::move(outer_tuple)[index<element_indices[Is].outer>]
                                       [index<element_indices[Is].inner>]...};
@@ -140,5 +131,4 @@ constexpr auto any_of(F &&f, T &&t, Ts &&...ts) -> bool {
 template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
     return not any_of(std::forward<Ts>(ts)...);
 }
-
 } // namespace cib
