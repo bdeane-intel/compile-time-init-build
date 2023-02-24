@@ -10,7 +10,9 @@
 
 namespace cib {
 template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
-    if constexpr (sizeof...(Ts) == 1) {
+    if constexpr (sizeof...(Ts) == 0) {
+        return cib::tuple<>{};
+    } else if constexpr (sizeof...(Ts) == 1) {
         return (std::forward<Ts>(ts), ...);
     } else {
         constexpr auto total_num_elements =
@@ -31,11 +33,13 @@ template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             using T = cib::tuple<tuple_element_t<
                 element_indices[Is].inner,
-                std::remove_cvref_t<decltype(std::move(
-                    outer_tuple)[index<element_indices[Is].outer>])>>...>;
-            return T{
-                std::move(outer_tuple)[index<element_indices[Is].outer>]
-                                      [index<element_indices[Is].inner>]...};
+                std::remove_cvref_t<
+                    decltype(std::move(outer_tuple)
+                                 .ugly_iGet_rvr(
+                                     index<element_indices[Is].outer>))>>...>;
+            return T{std::move(outer_tuple)
+                         .ugly_iGet_rvr(index<element_indices[Is].outer>)
+                             [index<element_indices[Is].inner>]...};
         }
         (std::make_index_sequence<total_num_elements>{});
     }
