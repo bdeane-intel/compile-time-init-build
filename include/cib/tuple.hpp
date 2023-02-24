@@ -10,6 +10,8 @@ namespace cib {
 template <std::size_t I>
 using index_constant = std::integral_constant<std::size_t, I>;
 template <std::size_t I> static constexpr index_constant<I> index{};
+template <typename> struct tag_constant {};
+template <typename T> static constexpr tag_constant<T> tag{};
 
 namespace tuple_literals {
 template <char... Chars>
@@ -49,20 +51,20 @@ struct element<Index, T, Ts...> {
     }
 
     template <typename U>
-        requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_clvr(
-        std::type_identity<U>) const &noexcept -> T const & {
+        requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
+    [[nodiscard]] constexpr auto ugly_tGet_clvr(tag_constant<U>) const &noexcept
+        -> T const & {
         return value;
     }
     template <typename U>
-        requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_lvr(std::type_identity<U>) &noexcept
+        requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
+    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U>) &noexcept
         -> T & {
         return value;
     }
     template <typename U>
-        requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_rvr(std::type_identity<U>) &&noexcept
+        requires(std::same_as<U, T> or ... or std::same_as<U, Ts>)
+    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U>) &&noexcept
         -> T && {
         return std::forward<T>(value);
     }
@@ -103,19 +105,19 @@ struct element<Index, T, Ts...> : T {
 
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_clvr(
-        std::type_identity<U>) const &noexcept -> T const & {
+    [[nodiscard]] constexpr auto ugly_tGet_clvr(tag_constant<U>) const &noexcept
+        -> T const & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_lvr(std::type_identity<U>) &noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_lvr(tag_constant<U>) &noexcept
         -> T & {
         return *this;
     }
     template <typename U>
         requires(std::is_same_v<U, T> or ... or std::is_same_v<U, Ts>)
-    [[nodiscard]] constexpr auto ugly_tGet_rvr(std::type_identity<U>) &&noexcept
+    [[nodiscard]] constexpr auto ugly_tGet_rvr(tag_constant<U>) &&noexcept
         -> T && {
         return std::move(*this);
     }
@@ -309,8 +311,8 @@ template <std::size_t I, typename Tuple>
 
 template <typename T, typename Tuple>
 [[nodiscard]] constexpr auto get(Tuple &&t)
-    -> decltype(std::forward<Tuple>(t).get(std::type_identity<T>{})) {
-    return std::forward<Tuple>(t).get(std::type_identity<T>{});
+    -> decltype(std::forward<Tuple>(t).get(tag<T>)) {
+    return std::forward<Tuple>(t).get(tag<T>);
 }
 
 template <typename... Ts> [[nodiscard]] constexpr auto make_tuple(Ts &&...ts) {
