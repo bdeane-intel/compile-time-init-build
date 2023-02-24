@@ -68,6 +68,11 @@ struct element<Index, T, Ts...> {
     }
 
     static constexpr auto ugly_Value(index_constant<Index>) -> T;
+    constexpr auto ugly_Value_clvr() const & -> T const & { return value; }
+    constexpr auto ugly_Value_lvr() & -> T & { return value; }
+    constexpr auto ugly_Value_rvr() && -> T && {
+        return std::forward<T>(value);
+    }
 
     T value;
 
@@ -116,6 +121,9 @@ struct element<Index, T, Ts...> : T {
     }
 
     static constexpr auto ugly_Value(index_constant<Index>) -> T;
+    constexpr auto ugly_Value_clvr() const & -> T const & { return *this; }
+    constexpr auto ugly_Value_lvr() & -> T & { return *this; }
+    constexpr auto ugly_Value_rvr() && -> T && { return std::move(*this); }
 };
 
 template <typename Op, typename Value> struct fold_helper {
@@ -176,26 +184,26 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init,
                                                   Op &&op) const & {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                ugly_iGet_clvr(index<Is>))
+                this->base_t<Is, Ts>::ugly_Value_clvr())
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_left(Init &&init, Op &&op) && {
         return (fold_helper{op, std::forward<Init>(init)} + ... +
-                std::move(*this).ugly_iGet_rvr(index<Is>))
+                std::move(*this).base_t<Is, Ts>::ugly_Value_rvr())
             .value;
     }
 
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init,
                                                    Op &&op) const & {
-        return (ugly_iGet_clvr(index<Is>) + ... +
+        return (this->base_t<Is, Ts>::ugly_Value_clvr() + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
     template <typename Init, typename Op>
     [[nodiscard]] constexpr inline auto fold_right(Init &&init, Op &&op) && {
-        return (std::move(*this).ugly_iGet_rvr(index<Is>) + ... +
+        return (std::move(*this).base_t<Is, Ts>::ugly_Value_rvr() + ... +
                 fold_helper{op, std::forward<Init>(init)})
             .value;
     }
@@ -228,14 +236,14 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
 
     template <typename Op>
     constexpr auto apply(Op &&op) const & -> decltype(auto) {
-        return std::forward<Op>(op)(ugly_iGet_clvr(index<Is>)...);
+        return std::forward<Op>(op)(this->base_t<Is, Ts>::ugly_Value_clvr()...);
     }
     template <typename Op> constexpr auto apply(Op &&op) & -> decltype(auto) {
-        return std::forward<Op>(op)(ugly_iGet_lvr(index<Is>)...);
+        return std::forward<Op>(op)(this->base_t<Is, Ts>::ugly_Value_lvr()...);
     }
     template <typename Op> constexpr auto apply(Op &&op) && -> decltype(auto) {
         return std::forward<Op>(op)(
-            std::move(*this).ugly_iGet_rvr(index<Is>)...);
+            std::move(*this).base_t<Is, Ts>::ugly_Value_rvr()...);
     }
 
     static constexpr auto size() -> std::size_t { return sizeof...(Ts); }

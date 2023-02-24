@@ -18,12 +18,9 @@ template <typename T>
 using get_service_from_tuple = typename std::remove_cvref_t<
     decltype(std::declval<T>()[index<0>])>::service_type;
 
-template <typename...> struct show_type;
-
 template <typename Config>
 constexpr static auto initialized_builders = transform<extract_service_tag>(
     [](auto extensions) {
-        // show_type<decltype(extensions)> x;
         using namespace cib::tuple_literals;
         constexpr auto initial_builder = extensions[0_idx].builder;
         using service = get_service_from_tuple<decltype(extensions)>;
@@ -33,7 +30,6 @@ constexpr static auto initialized_builders = transform<extract_service_tag>(
                     [&](auto... args) { return outer_builder.add(args...); });
             });
 
-        // show_type<decltype(built_service)> x;
         return detail::service_entry<service, decltype(built_service)>{
             built_service};
     },

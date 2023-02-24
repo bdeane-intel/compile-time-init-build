@@ -42,7 +42,7 @@ template <int NumFuncs = 0, typename... ArgTypes> struct callback {
      * @see cib::nexus
      */
     template <std::convertible_to<func_ptr_t>... Fs>
-    [[nodiscard]] CIB_CONSTEVAL auto add(Fs &&...fs) const {
+    [[nodiscard]] constexpr auto add(Fs &&...fs) const {
         return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
             return callback<NumFuncs + sizeof...(Fs), ArgTypes...>{
                 .funcs = {funcs[Is]..., std::forward<Fs>(fs)...}};
