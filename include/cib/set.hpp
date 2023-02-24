@@ -9,6 +9,7 @@
 #include <utility>
 
 namespace cib {
+namespace detail {
 template <auto... Indexes, typename Operation>
 [[nodiscard]] constexpr auto make_tuple_from_op(std::index_sequence<Indexes...>,
                                                 [[maybe_unused]] Operation op) {
@@ -19,8 +20,7 @@ template <auto... Indexes, typename Operation>
 template <template <typename> typename MetaFunc, typename... TupleElems>
 [[nodiscard]] constexpr auto
 create_demux_tags(cib::tuple<TupleElems...> const &) {
-    auto type_names =
-        cib::detail::create_type_names<MetaFunc, TupleElems...>(0);
+    auto type_names = create_type_names<MetaFunc, TupleElems...>(0);
 
     if constexpr (sizeof...(TupleElems) > 0) {
         // assign all type_names with the same name the same src id
@@ -38,62 +38,46 @@ create_demux_tags(cib::tuple<TupleElems...> const &) {
     return type_names;
 }
 
+struct bin {
+    std::size_t offset{};
+    std::size_t size{};
+};
+
+template <std::size_t N>
+[[nodiscard]] constexpr auto create_bins(const auto &tags) {
+    std::array<bin, N> bins{};
+    auto index = std::size_t{};
+    auto offset = std::size_t{};
+    for (auto &tag : tags) {
+        if (tag.src != index) {
+            bins[++index].offset = offset;
+        }
+        ++bins[index].size;
+        ++offset;
+    }
+    return bins;
+}
+} // namespace detail
+
 /**
  * De-multiplex a tuple (tn) into a tuple of tuples grouped by a meta function
  * (meta_func).
  */
 template <template <typename> typename MetaFunc, typename Tuple>
 [[nodiscard]] constexpr auto demux(Tuple t) {
-    constexpr auto tags = create_demux_tags<MetaFunc>(t);
+    constexpr auto tags = detail::create_demux_tags<MetaFunc>(t);
     constexpr std::size_t num_bins = tags.empty() ? 0 : (tags.back().src + 1);
+    constexpr auto bins = detail::create_bins<num_bins>(tags);
 
-    // FIXME: this should use generic algorithms
-    // the number of elements in each bin in 'tags'
-    constexpr std::array<std::size_t, num_bins> bin_size = [&]() {
-        std::array<std::size_t, num_bins> bin_size_{};
-
-        std::size_t begin = 0;
-        std::size_t end = begin;
-        for (std::size_t bin_index = 0; bin_index < num_bins; bin_index++) {
-            while (end != tags.size() && tags[end].src == bin_index) {
-                end++;
-            }
-            bin_size_[bin_index] = end - begin;
-            begin = end;
-        }
-
-        return bin_size_;
-    }();
-
-    // FIXME: this should use generic algorithms
-    // the offset of each bin in 'tags'
-    constexpr std::array<std::size_t, num_bins> bin_offset = [&]() {
-        std::array<std::size_t, num_bins> bin_offset_{};
-
-        std::size_t begin = 0;
-        std::size_t end = begin;
-        for (std::size_t bin_index = 0; bin_index < num_bins; bin_index++) {
-            while (end != tags.size() && tags[end].src == bin_index) {
-                end++;
-            }
-            bin_offset_[bin_index] = begin;
-            begin = end;
-        }
-
-        return bin_offset_;
-    }();
-
-    return cib::make_tuple_from_op(
-        std::make_index_sequence<num_bins>{}, [&](auto bin_index) {
-            return cib::make_tuple_from_op(
-                std::make_index_sequence<bin_size[bin_index]>{},
+    return detail::make_tuple_from_op(
+        std::make_index_sequence<std::size(bins)>{}, [&](auto bin_index) {
+            return detail::make_tuple_from_op(
+                std::make_index_sequence<bins[bin_index].size>{},
                 [&](auto offset_into_bin) {
                     constexpr auto tuple_index =
-                        tags[bin_offset[bin_index] + offset_into_bin].index;
+                        tags[bins[bin_index].offset + offset_into_bin].index;
                     return t[index<tuple_index>];
                 });
         });
-
-#undef tags
 }
 } // namespace cib

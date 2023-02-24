@@ -152,7 +152,7 @@ template <typename Op, typename Value> struct fold_helper {
 template <typename Op, typename Value>
 fold_helper(Op, Value) -> fold_helper<Op, std::remove_cvref_t<Value>>;
 
-template <template <typename> typename...> struct index_function_list {};
+template <template <typename> typename...> struct index_function_list;
 template <typename...> struct tuple_impl;
 
 template <template <typename> typename... Fs> struct element_helper {
@@ -212,12 +212,12 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> *i) const & -> decltype(auto) {
-        return ugly_iGet_clvr(i);
+        return this->ugly_iGet_clvr(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
     operator[](index_constant<I> *i) & -> decltype(auto) {
-        return ugly_iGet_lvr(i);
+        return this->ugly_iGet_lvr(i);
     }
     template <std::size_t I>
     [[nodiscard]] constexpr auto
@@ -226,10 +226,10 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     }
 
     [[nodiscard]] constexpr auto get(auto idx) const & -> decltype(auto) {
-        return ugly_tGet_clvr(idx);
+        return this->ugly_tGet_clvr(idx);
     }
     [[nodiscard]] constexpr auto get(auto idx) & -> decltype(auto) {
-        return ugly_tGet_lvr(idx);
+        return this->ugly_tGet_lvr(idx);
     }
     [[nodiscard]] constexpr auto get(auto idx) && -> decltype(auto) {
         return std::move(*this).ugly_tGet_rvr(idx);

@@ -13,10 +13,10 @@ template <typename... Ts> [[nodiscard]] constexpr auto tuple_cat(Ts &&...ts) {
     if constexpr (sizeof...(Ts) == 0) {
         return cib::tuple<>{};
     } else if constexpr (sizeof...(Ts) == 1) {
-        return (std::forward<Ts>(ts), ...);
+        return (ts, ...);
     } else {
         constexpr auto total_num_elements =
-            (0 + ... + tuple_size_v<std::remove_cvref_t<Ts>>);
+            (std::size_t{} + ... + tuple_size_v<std::remove_cvref_t<Ts>>);
 
         [[maybe_unused]] constexpr auto element_indices = [&] {
             std::array<detail::index_pair, total_num_elements> indices{};
