@@ -50,12 +50,11 @@ template <typename Tag> CIB_CONSTEVAL static auto name() -> std::string_view {
     return function_name.substr(lhs, rhs - lhs + 1);
 }
 
-template <typename MetaFunc, typename... Types>
+template <template <typename> typename MetaFunc, typename... Types>
 CIB_CONSTEVAL static auto create_type_names([[maybe_unused]] std::size_t src) {
     auto i = std::size_t{};
     std::array<typename_map_entry, sizeof...(Types)> names = {
-        typename_map_entry{name<typename MetaFunc::template invoke<Types>>(),
-                           i++, src}...};
+        typename_map_entry{name<MetaFunc<Types>>(), i++, src}...};
     std::sort(std::begin(names), std::end(names));
     return names;
 }

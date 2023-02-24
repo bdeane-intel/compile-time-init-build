@@ -246,8 +246,8 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
         ((p++->inner = Is), ...);
         return p;
     }
-    [[nodiscard]] static constexpr auto fill_outer_indices(index_pair *p,
-                                                           std::size_t n)
+    [[nodiscard]] static constexpr auto
+    fill_outer_indices(index_pair *p, [[maybe_unused]] std::size_t n)
         -> index_pair * {
         ((p++->outer = (static_cast<void>(Is), n)), ...);
         return p;

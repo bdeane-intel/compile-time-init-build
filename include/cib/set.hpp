@@ -16,44 +16,35 @@ template <auto... Indexes, typename Operation>
         op(std::integral_constant<std::size_t, Indexes>{})...);
 }
 
-template <typename MetaFunc, typename Tuple> struct create_demux_tags_t;
+template <template <typename> typename MetaFunc, typename... TupleElems>
+[[nodiscard]] constexpr auto
+create_demux_tags(cib::tuple<TupleElems...> const &) {
+    auto type_names =
+        cib::detail::create_type_names<MetaFunc, TupleElems...>(0);
 
-template <typename MetaFunc, typename... TupleElems>
-struct create_demux_tags_t<MetaFunc, cib::tuple<TupleElems...>> {
-    constexpr static auto invoke() {
-        auto type_names =
-            cib::detail::create_type_names<MetaFunc, TupleElems...>(0);
-
-        if constexpr (sizeof...(TupleElems) > 0) {
-            // assign all type_names with the same name the same src id
-            auto prev_name = type_names.front();
-            std::size_t name_dst_index = 0;
-            for (auto &name : type_names) {
-                if (name != prev_name) {
-                    prev_name = name;
-                    ++name_dst_index;
-                }
-                name.src = name_dst_index;
+    if constexpr (sizeof...(TupleElems) > 0) {
+        // assign all type_names with the same name the same src id
+        auto prev_name = type_names.front();
+        std::size_t name_dst_index = 0;
+        for (auto &name : type_names) {
+            if (name != prev_name) {
+                prev_name = name;
+                ++name_dst_index;
             }
+            name.src = name_dst_index;
         }
-
-        return type_names;
     }
-};
+
+    return type_names;
+}
 
 /**
  * De-multiplex a tuple (tn) into a tuple of tuples grouped by a meta function
  * (meta_func).
  */
-template <typename MetaFunc, typename Tuple>
+template <template <typename> typename MetaFunc, typename Tuple>
 [[nodiscard]] constexpr auto demux(Tuple t) {
-// workaround for gcc bug
-#if not(defined(__clang__)) && (defined(__GNUC__) || defined(__GNUG__))
-#define tags create_demux_tags_t<MetaFunc, Tuple>::invoke()
-#else
-    constexpr auto tags = create_demux_tags_t<MetaFunc, Tuple>::invoke();
-#endif
-
+    constexpr auto tags = create_demux_tags<MetaFunc>(t);
     constexpr std::size_t num_bins = tags.empty() ? 0 : (tags.back().src + 1);
 
     // FIXME: this should use generic algorithms
