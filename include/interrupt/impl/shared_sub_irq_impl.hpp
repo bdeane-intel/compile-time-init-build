@@ -34,7 +34,7 @@ struct shared_sub_irq_impl {
 
   public:
     explicit constexpr shared_sub_irq_impl(SubIrqImpls const &...impls)
-        : sub_irq_impls{cib::make_tuple(impls...)} {}
+        : sub_irq_impls{impls...} {}
 
     auto get_interrupt_enables() const {
         if constexpr (active) {

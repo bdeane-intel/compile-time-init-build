@@ -32,7 +32,7 @@ template <typename ConfigT, typename... SubIrqImpls> struct shared_irq_impl {
 
   public:
     explicit constexpr shared_irq_impl(SubIrqImpls const &...impls)
-        : sub_irq_impls{cib::make_tuple(impls...)} {}
+        : sub_irq_impls{impls...} {}
 
     /**
      * Initialize and enable the hardware interrupt along with
