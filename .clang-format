@@ -3,7 +3,7 @@ IndentWidth: 4
 
 IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex: '".*'
+  - Regex: '^".*'
     Priority: 1
   - Regex: '^<(container|cib|flow|interrupt|log|msg|sc|seq)/.*'
     Priority: 2
