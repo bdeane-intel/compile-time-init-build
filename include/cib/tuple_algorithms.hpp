@@ -140,4 +140,12 @@ constexpr auto any_of(F &&f, T &&t, Ts &&...ts) -> bool {
 template <typename... Ts> constexpr auto none_of(Ts &&...ts) -> bool {
     return not any_of(std::forward<Ts>(ts)...);
 }
+
+template <typename Tuple, typename T>
+constexpr auto contains_type =
+    []<std::size_t... Is>(std::index_sequence<Is...>) {
+    return (... or std::is_same_v<T, tuple_element_t<Is, Tuple>>);
+}
+(std::make_index_sequence<tuple_size_v<Tuple>>{});
+
 } // namespace cib

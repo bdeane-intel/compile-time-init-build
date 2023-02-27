@@ -87,11 +87,11 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
      * @param flow_description
      *      See flow::Builder<>.add()
      */
-    template <typename IrqType, typename T>
-    auto constexpr add(binding_t<IrqType, T> const &binding) {
+    template <typename... IrqTypes, typename... Ts>
+    auto constexpr add(binding_t<IrqTypes, Ts> const &...bindings) {
         cib::for_each(
             [&](auto &irq) {
-                irq.template add<IrqType>(binding.flow_description);
+                (irq.template add<IrqTypes>(bindings.flow_description), ...);
             },
             irqs);
         return *this;

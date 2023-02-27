@@ -69,7 +69,7 @@ TEST_CASE("apply", "[tuple_algorithms]") {
 TEST_CASE("join", "[tuple_algorithms]") {
     constexpr auto t = cib::tuple{1, 2, 3};
     static_assert(t.join(std::plus{}) == 6);
-    static_assert(cib::join(t, std::plus{}) == 6);
+    static_assert(cib::join(std::plus{}, t) == 6);
     static_assert(cib::tuple{1, 2, 3}.join(std::plus{}) == 6);
     static_assert(
         cib::tuple{move_only{42}}
@@ -309,4 +309,12 @@ TEST_CASE("none_of", "[tuple_algorithms]") {
     static_assert(cib::none_of([](auto n) { return n % 2 == 0; }, t));
     static_assert(
         cib::none_of([](auto x, auto y) { return (x + y) % 2 != 0; }, t, t));
+}
+
+TEST_CASE("contains_type", "[tuple_algorithms]") {
+    using T = cib::tuple<int, bool, int &>;
+    static_assert(cib::contains_type<T, int>);
+    static_assert(cib::contains_type<T, bool>);
+    static_assert(cib::contains_type<T, int &>);
+    static_assert(not cib::contains_type<T, float>);
 }
