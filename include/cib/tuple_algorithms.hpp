@@ -56,11 +56,12 @@ template <template <typename T> typename Pred, typename T>
         constexpr auto indices = [] {
             auto a = std::array<std::size_t, num_matches>{};
             [[maybe_unused]] auto it = std::begin(a);
-            auto copy_index = [&]<std::size_t I, typename Elem> {
-                if constexpr (Pred<Elem>::value) {
-                    *it++ = I;
-                }
-            };
+            [[maybe_unused]] auto copy_index =
+                [&]<std::size_t I, typename Elem> {
+                    if constexpr (Pred<Elem>::value) {
+                        *it++ = I;
+                    }
+                };
             (copy_index.template operator()<Is, tuple_element_t<Is, tuple_t>>(),
              ...);
             return a;

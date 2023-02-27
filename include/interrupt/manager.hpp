@@ -114,13 +114,10 @@ template <typename RootT, typename ConcurrencyPolicyT> class manager {
         auto const irq_impls = built_irqs<BuilderValue>(
             std::make_index_sequence<irqs_t::size()>{});
 
-        return cib::apply(
-            [](auto... irq_impl_args) {
-                return manager_impl<InterruptHal, Dynamic,
-                                    decltype(irq_impl_args)...>(
-                    irq_impl_args...);
-            },
-            irq_impls);
+        return irq_impls.apply([](auto... irq_impl_args) {
+            return manager_impl<InterruptHal, Dynamic,
+                                decltype(irq_impl_args)...>(irq_impl_args...);
+        });
     }
 };
 

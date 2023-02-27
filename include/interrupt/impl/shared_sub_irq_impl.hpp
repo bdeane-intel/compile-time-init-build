@@ -41,12 +41,10 @@ struct shared_sub_irq_impl {
             auto const active_sub_irq_impls =
                 cib::filter<is_active>(sub_irq_impls);
 
-            return cib::apply(
-                [&](auto &&...irqs) {
-                    return cib::tuple_cat(irqs.get_interrupt_enables()...,
-                                          cib::make_tuple(enable_field));
-                },
-                active_sub_irq_impls);
+            return active_sub_irq_impls.apply([&](auto &&...irqs) {
+                return cib::tuple_cat(irqs.get_interrupt_enables()...,
+                                      cib::make_tuple(enable_field));
+            });
 
         } else {
             return cib::make_tuple();

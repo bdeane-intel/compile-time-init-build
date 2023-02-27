@@ -101,15 +101,9 @@ struct dynamic_controller {
     template <typename RegFieldTuple>
     constexpr static auto get_unique_regs(RegFieldTuple fields) {
         return fields.fold_left(cib::make_tuple(), [](auto regs, auto field) {
-            constexpr bool reg_has_been_seen_already = cib::apply(
-                [=](auto... regs_pack) {
-                    return (
-                        std::is_same_v<typename decltype(field)::RegisterType,
-                                       decltype(regs_pack)> ||
-                        ...);
-                },
-                decltype(regs){});
-
+            constexpr bool reg_has_been_seen_already =
+                cib::contains_type<decltype(regs),
+                                   typename decltype(field)::RegisterType>;
             if constexpr (reg_has_been_seen_already) {
                 return regs;
             } else {
@@ -221,9 +215,9 @@ struct dynamic_controller {
         auto const interrupt_enables_tuple = cib::transform(
             [](auto irq) { return irq.enable_field; }, matching_irqs);
 
-        cib::apply(
-            [](auto... fields) { enable_by_field<en, decltype(fields)...>(); },
-            interrupt_enables_tuple);
+        interrupt_enables_tuple.apply([]<typename... Fields>(Fields...) {
+            enable_by_field<en, Fields...>();
+        });
     }
 
   public:

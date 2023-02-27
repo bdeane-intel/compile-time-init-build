@@ -65,18 +65,14 @@ class manager_impl : public manager_interface {
      * Initialize the interrupt hardware and each of the active irqs.
      */
     void init_sub_interrupts() const final {
-        auto const interrupt_enables_tuple = cib::apply(
-            [](auto... irqs_pack) {
+        auto const interrupt_enables_tuple =
+            irq_impls.apply([](auto... irqs_pack) {
                 return cib::tuple_cat(irqs_pack.get_interrupt_enables()...);
-            },
-            irq_impls);
+            });
 
-        cib::apply(
-            [](auto... interrupt_enables) {
-                Dynamic::template enable_by_field<
-                    true, decltype(interrupt_enables)...>();
-            },
-            interrupt_enables_tuple);
+        interrupt_enables_tuple.apply([]<typename... Enables>(Enables...) {
+            Dynamic::template enable_by_field<true, Enables...>();
+        });
     }
 
     /**
