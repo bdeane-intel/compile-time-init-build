@@ -75,7 +75,7 @@ constexpr static void process(NameType const &name, EventType const &event,
                 },
                 handlers_tuple);
 
-            const auto mismatch_description = mismatch_descriptions.fold_left(
+            const auto mismatch_description = mismatch_descriptions.join(
                 [](auto lhs, auto rhs) { return lhs + rhs; });
 
             CIB_ERROR("{} - Received event that does not match any known "
@@ -133,9 +133,8 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
     [[nodiscard]] constexpr auto describe() const {
         const auto matcher_descriptions = cib::transform(
             [](auto m) { return "("_sc + m.describe() + ")"_sc; }, matchers);
-
-        return matcher_descriptions.fold_left(
-            ""_sc, [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
+        return matcher_descriptions.join(
+            [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
 
     template <typename EventType>
@@ -146,9 +145,8 @@ template <typename TOp, typename... MatcherTypes> struct logical_matcher {
                               m.describe_match(event));
             },
             matchers);
-
-        return matcher_descriptions.fold_left(
-            ""_sc, [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
+        return matcher_descriptions.join(
+            [](auto lhs, auto rhs) { return lhs + TOp::text + rhs; });
     }
 };
 

@@ -133,7 +133,8 @@ template <typename Op, typename Value> struct fold_helper {
 
   private:
     template <typename Rhs>
-    friend constexpr auto operator+(fold_helper &&lhs, Rhs &&rhs) {
+    [[nodiscard]] friend constexpr auto operator+(fold_helper &&lhs,
+                                                  Rhs &&rhs) {
         using R =
             decltype(lhs.op(std::move(lhs).value, std::forward<Rhs>(rhs)));
         return fold_helper<Op, std::remove_cvref_t<R>>{
@@ -141,16 +142,33 @@ template <typename Op, typename Value> struct fold_helper {
     }
 
     template <typename Lhs>
-    friend constexpr auto operator+(Lhs &&lhs, fold_helper &&rhs) {
+    [[nodiscard]] friend constexpr auto operator+(Lhs &&lhs,
+                                                  fold_helper &&rhs) {
         using R =
             decltype(rhs.op(std::forward<Lhs>(lhs), std::move(rhs).value));
         return fold_helper<Op, std::remove_cvref_t<R>>{
             rhs.op, rhs.op(std::forward<Lhs>(lhs), std::move(rhs).value)};
     }
 };
-
 template <typename Op, typename Value>
 fold_helper(Op, Value) -> fold_helper<Op, std::remove_cvref_t<Value>>;
+
+template <typename Op, typename Value> struct join_helper {
+    Op &op;
+    Value value;
+};
+template <typename Op, typename Value>
+join_helper(Op, Value) -> join_helper<Op, std::remove_cvref_t<Value>>;
+
+template <typename Op, typename T, typename U>
+[[nodiscard]] constexpr auto operator+(join_helper<Op, T> &&lhs,
+                                       join_helper<Op, U> &&rhs) {
+    using R = decltype(lhs.op(std::forward<join_helper<Op, T>>(lhs).value,
+                              std::forward<join_helper<Op, U>>(rhs).value));
+    return join_helper<Op, std::remove_cvref_t<R>>{
+        lhs.op, lhs.op(std::forward<join_helper<Op, T>>(lhs).value,
+                       std::forward<join_helper<Op, U>>(rhs).value)};
+}
 
 template <template <typename> typename...> struct index_function_list;
 template <typename...> struct tuple_impl;
@@ -245,6 +263,21 @@ struct tuple_impl<std::index_sequence<Is...>, index_function_list<Fs...>, Ts...>
     template <typename Op> constexpr auto apply(Op &&op) && -> decltype(auto) {
         return std::forward<Op>(op)(
             std::move(*this).base_t<Is, Ts>::ugly_Value_rvr()...);
+    }
+
+    template <typename Op>
+        requires(sizeof...(Ts) > 0)
+    constexpr auto join(Op &&op) const & -> decltype(auto) {
+        return (... + join_helper{op, this->base_t<Is, Ts>::ugly_Value_clvr()})
+            .value;
+    }
+    template <typename Op>
+        requires(sizeof...(Ts) > 0)
+    constexpr auto join(Op &&op) && -> decltype(auto) {
+        return (... +
+                join_helper{op,
+                            std::move(*this).base_t<Is, Ts>::ugly_Value_rvr()})
+            .value;
     }
 
     static constexpr auto size() -> std::size_t { return sizeof...(Ts); }

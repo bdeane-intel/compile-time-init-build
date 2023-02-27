@@ -104,6 +104,11 @@ constexpr auto apply(Op &&op, T &&t) -> decltype(auto) {
     return std::forward<T>(t).apply(std::forward<Op>(op));
 }
 
+template <typename Op, typename T>
+constexpr auto join(Op &&op, T &&t) -> decltype(auto) {
+    return std::forward<T>(t).join(std::forward<Op>(op));
+}
+
 template <typename Op, typename T, typename... Ts>
 constexpr auto for_each(Op &&op, T &&t, Ts &&...ts) -> Op {
     [&]<std::size_t... Is>(std::index_sequence<Is...>) {
