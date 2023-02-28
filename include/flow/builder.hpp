@@ -5,7 +5,6 @@
 #include <flow/impl.hpp>
 #include <flow/milestone.hpp>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iterator>
@@ -57,9 +56,12 @@ class generic_builder {
      */
     static constexpr auto hasNoIncomingEdges(GraphType &graph, NodeType node)
         -> bool {
-        return std::none_of(
-            std::begin(graph), std::end(graph),
-            [&](auto const &s) { return s.value.contains(node); });
+        for (auto const &entry : graph) {
+            if (entry.value.contains(node)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     [[nodiscard]] constexpr auto getNodesWithNoIncomingEdge() const

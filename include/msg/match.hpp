@@ -168,8 +168,7 @@ make_logical_matcher(MatcherTypes const &...matchers) {
         if constexpr (remaining_matcher_tuple.size() == 0) {
             return always<TOp::unit>;
         } else if constexpr (remaining_matcher_tuple.size() == 1) {
-            using namespace cib::tuple_literals;
-            return remaining_matcher_tuple[0_idx];
+            return cib::get<0>(remaining_matcher_tuple);
         } else {
             return remaining_matcher_tuple.apply(
                 [&](auto... remaining_matchers) {
