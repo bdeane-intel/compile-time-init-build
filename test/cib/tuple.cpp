@@ -108,6 +108,13 @@ TEST_CASE("tuple of lvalue references", "[tuple]") {
     CHECK(x == 2);
 }
 
+TEST_CASE("tuple of lambdas", "[tuple]") {
+    auto x = 1;
+    auto t = cib::make_tuple([&] { x = 2; }, [&] { x = 3; });
+    cib::get<0>(t)();
+    CHECK(x == 2);
+}
+
 TEST_CASE("tuple size/elements", "[tuple]") {
     using T = cib::tuple<int, bool>;
     static_assert(cib::tuple_size_v<T> == 2);

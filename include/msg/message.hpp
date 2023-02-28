@@ -127,14 +127,11 @@ struct message_base : public message_data<MaxNumDWords> {
             cib::filter<not_required>(FieldTupleType{});
         if constexpr (required_fields.size() == 0) {
             return match::always<true>;
-
         } else {
-            return apply(
-                [](auto... required_fields_pack) {
-                    return match::all(
-                        decltype(required_fields_pack)::match_requirements...);
-                },
-                required_fields);
+            return required_fields.apply([](auto... required_fields_pack) {
+                return match::all(
+                    decltype(required_fields_pack)::match_requirements...);
+            });
         }
     }();
 
@@ -148,7 +145,7 @@ struct message_base : public message_data<MaxNumDWords> {
 
         if (src.size() == 0) {
             // default constructor, set default values
-            for_each([&](auto field) { set(field); }, FieldTupleType{});
+            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
         }
     }
 
@@ -159,7 +156,7 @@ struct message_base : public message_data<MaxNumDWords> {
 
         if constexpr (sizeof...(argFields) == 0) {
             // default constructor, set default values
-            for_each([&](auto field) { set(field); }, FieldTupleType{});
+            cib::for_each([&](auto field) { set(field); }, FieldTupleType{});
         } else {
             auto const arg_field_tuple = cib::make_tuple(argFields...);
             auto const first_arg = cib::get<0>(arg_field_tuple);
@@ -173,10 +170,11 @@ struct message_base : public message_data<MaxNumDWords> {
                 // TODO: ensure fields aren't set more than once
 
                 // set default values
-                for_each([&](auto field) { set(field); }, FieldTupleType{});
+                cib::for_each([&](auto field) { set(field); },
+                              FieldTupleType{});
 
                 // set specified field values
-                for_each([&](auto field) { set(field); }, arg_field_tuple);
+                cib::for_each([&](auto field) { set(field); }, arg_field_tuple);
             }
         }
     }

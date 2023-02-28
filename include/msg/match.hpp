@@ -41,7 +41,7 @@ constexpr static void process(NameType const &name, EventType const &event,
 
     bool event_handled = false;
 
-    for_each(
+    cib::for_each(
         [&](auto handler) {
             if constexpr (!decltype(handler)::is_default_handler) {
                 if (handler.matcher(event)) {
@@ -58,7 +58,7 @@ constexpr static void process(NameType const &name, EventType const &event,
 
     if (!event_handled) {
         if constexpr (hasDefault) {
-            for_each(
+            cib::for_each(
                 [&](auto handler) {
                     if constexpr (decltype(handler)::is_default_handler) {
                         CIB_INFO("{} - Processing [default]", name);
@@ -168,15 +168,15 @@ make_logical_matcher(MatcherTypes const &...matchers) {
         if constexpr (remaining_matcher_tuple.size() == 0) {
             return always<TOp::unit>;
         } else if constexpr (remaining_matcher_tuple.size() == 1) {
-            return get<0>(remaining_matcher_tuple);
+            using namespace cib::tuple_literals;
+            return remaining_matcher_tuple[0_idx];
         } else {
-            return apply(
+            return remaining_matcher_tuple.apply(
                 [&](auto... remaining_matchers) {
                     return logical_matcher<TOp,
                                            decltype(remaining_matchers)...>{
                         remaining_matcher_tuple};
-                },
-                remaining_matcher_tuple);
+                });
         }
     }
 }

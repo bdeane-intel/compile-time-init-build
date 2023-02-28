@@ -19,36 +19,34 @@ void dispatch_single_callable(CallableT const &callable,
         },
         detail::func_args_v<CallableT>);
 
-    apply(
-        [&](auto const &...requiredArgs) {
-            using MsgType = detail::msg_type_t<decltype(callable)>;
-            MsgType const msg{data};
+    required_args_tuple.apply([&](auto const &...requiredArgs) {
+        using MsgType = detail::msg_type_t<decltype(callable)>;
+        MsgType const msg{data};
 
-            if (msg.isValid()) {
-                callable(msg, requiredArgs...);
-            }
-        },
-        required_args_tuple);
+        if (msg.isValid()) {
+            callable(msg, requiredArgs...);
+        }
+    });
 }
 
-template <typename BaseMsgT, typename ExtraCallbackArgsListT,
-          typename NameTypeT, typename MatchMsgTypeT,
-          typename CallbackTypeListT>
-struct callback_impl;
-
-template <typename...> struct callback_types {};
+template <typename...> struct callback_impl;
 
 template <typename...> struct extra_callback_args {};
+
+namespace detail {
+template <typename T>
+concept not_nullptr = not
+std::is_null_pointer_v<T>;
+} // namespace detail
 
 /**
  * A Class that defines a message callback and provides methods for validating
  * and handling incoming messages.
  */
 template <typename BaseMsgT, typename... ExtraCallbackArgsT, typename NameTypeT,
-          typename MatchMsgTypeT, typename... CallableTypesT>
+          typename MatchMsgTypeT, detail::not_nullptr... CallableTypesT>
 struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
-                     NameTypeT, MatchMsgTypeT,
-                     callback_types<CallableTypesT...>> {
+                     NameTypeT, MatchMsgTypeT, CallableTypesT...> {
   private:
     constexpr static NameTypeT name{};
 
@@ -58,8 +56,8 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
     template <typename DataIterableType>
     void dispatch(DataIterableType const &data,
                   ExtraCallbackArgsT const &...args) const {
-        for_each(
-            [&](auto callback) {
+        cib::for_each(
+            [&](auto const &callback) {
                 dispatch_single_callable(callback, data, args...);
             },
             callbacks);
@@ -73,23 +71,14 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
             },
             callbacks);
 
-        return apply(
-            [](auto... matchersPack) { return match::any(matchersPack...); },
-            matchers);
+        return matchers.apply(
+            [](auto... matchersPack) { return match::any(matchersPack...); });
     }
 
   public:
-    constexpr explicit callback_impl(MatchMsgTypeT const &msg,
-                                     CallableTypesT const &...callback_args)
-        : match_msg(msg), callbacks(cib::make_tuple(callback_args...)) {
-        for_each(
-            [](auto callback) {
-                static_assert(
-                    !std::is_same<decltype(callback), std::nullptr_t>::value,
-                    "Function pointer specified for callback can't be null");
-            },
-            callbacks);
-    }
+    template <typename... CBs>
+    constexpr explicit callback_impl(MatchMsgTypeT const &msg, CBs &&...cbs)
+        : match_msg(msg), callbacks{std::forward<CBs>(cbs)...} {}
 
     [[nodiscard]] auto is_match(BaseMsgT const &msg) const -> bool {
         return match::all(match_msg, match_any_callback())(msg);
@@ -120,11 +109,11 @@ struct callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
 };
 
 template <typename BaseMsgT, typename... ExtraCallbackArgsT>
-auto callback = [](auto name, auto match_msg, auto... callbacks) {
+constexpr auto callback = []<typename Name, typename MatchMsg, typename... CBs>(
+                              Name, MatchMsg match_msg, CBs &&...callbacks) {
     return callback_impl<BaseMsgT, extra_callback_args<ExtraCallbackArgsT...>,
-                         decltype(name), decltype(match_msg),
-                         callback_types<decltype(callbacks)...>>{match_msg,
-                                                                 callbacks...};
+                         Name, MatchMsg, std::remove_cvref_t<CBs>...>{
+        match_msg, std::forward<CBs>(callbacks)...};
 };
 
 } // namespace msg
